@@ -1,1 +1,1 @@
-# rdbnn
+# rdbnn```bashpython main.py --gpu_id 0```
