@@ -138,8 +138,8 @@ class CNN_DNI_CONVx2_FCx1(FUNCTIONAL_NET):
 
         def gen_params():
             params = {
-                'conv1': conv_params(input_dim, n_hidden, k=5, device),
-                'conv2': conv_params(n_hidden, n_hidden*2, k=5, device),
+                'conv1': conv_params(input_dim, n_hidden, 5, device),
+                'conv2': conv_params(n_hidden, n_hidden*2, 5, device),
                 'fc1': linear_params(7*7*n_hidden*2, n_classes, device)}
             functions = {'conv1': F.conv2d, 'conv2': F.conv2d, 'fc1': F.linear}
             args = {'conv1': {'padding':2}, 'conv2': {'padding':2}, 'fc1': {}}
@@ -158,9 +158,9 @@ class CNN_DNI_CONVx2_FCx1(FUNCTIONAL_NET):
 
         def gen_dni():
             dni = {
-                'conv1': dni_Conv2d(n_hidden, (14, 14), n_classes,
+                'conv1': dni_Conv2d(n_hidden, (28, 28), n_classes,
                                     dni_hidden_size=n_hidden*2, conditioned=conditioned_DNI).to(device),
-                'conv2': dni_Conv2d(n_hidden, (7, 7), n_classes,
+                'conv2': dni_Conv2d(n_hidden*2, (14, 14), n_classes,
                                     dni_hidden_size=n_hidden*2, conditioned=conditioned_DNI).to(device),
                 'fc1': dni_linear(n_classes, n_classes,
                                   dni_hidden_size=n_hidden*2, conditioned=conditioned_DNI).to(device)}
@@ -200,6 +200,7 @@ class CNN_DNI_CONVx2_FCx1(FUNCTIONAL_NET):
         # dni
         if do_grad:
             grad = self.dni[key](fc, y_onehot) # d_loss/d_fc
+            
         else:
             grad = None
 
@@ -213,6 +214,7 @@ class CNN_DNI_CONVx2_FCx1(FUNCTIONAL_NET):
         # downsampling
         if self.activations[key] is not None:
             output = F.max_pool2d(output, 2)
+            
 
         return output, grad, fc
 

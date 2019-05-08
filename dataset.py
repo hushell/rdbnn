@@ -30,35 +30,57 @@ class mnist():
 class cifar10():
     def __init__(self, args):
         # CIFAR 10 Dataset
-        transform = self.image_transform()
         train_dataset = dsets.CIFAR10(root='./data/',
                                train=True,
-                               transform=transform,
+                               transform=transforms.Compose([transforms.RandomResizedCrop(28),
+		                                                    transforms.ToTensor(),]),
                                download=True)
 
         test_dataset = dsets.CIFAR10(root='./data/',
                               train=False,
-                              transform=transforms.ToTensor())
+                              transform=transforms.Compose([transforms.transforms.Resize(32),
+		                                                    transforms.CenterCrop(28),
+		                                                    transforms.ToTensor(),]),)
 
         # Data Loader (Input Pipeline)
         self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
-                                           batch_size=100,
+                                           batch_size=args.batch_size,
                                            shuffle=True)
 
         self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
-                                          batch_size=100,
+                                          batch_size=args.batch_size,
+                                          shuffle=False)
+        self.input_dims = None
+        self.num_classes = 10
+        self.in_channel = 3
+        self.num_train = len(train_dataset)
+        
+        
+class svhn():
+    def __init__(self, args):
+        # CIFAR 10 Dataset
+        train_dataset = dsets.CIFAR10(root='./data/',
+                               split='train',
+                               transform=transforms.Compose([transforms.RandomResizedCrop(28),
+		                                                    transforms.ToTensor(),]),
+                               download=True)
+
+        test_dataset = dsets.CIFAR10(root='./data/',
+                              split='test',
+                              transform=transforms.Compose([transforms.transforms.Resize(32),
+		                                                    transforms.CenterCrop(28),
+		                                                    transforms.ToTensor(),]),)
+
+        # Data Loader (Input Pipeline)
+        self.train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
+                                           batch_size=args.batch_size,
+                                           shuffle=True)
+
+        self.test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                          batch_size=args.batch_size,
                                           shuffle=False)
         self.input_dims = None
         self.num_classes = 10
         self.in_channel = 3
         self.num_train = len(train_dataset)
 
-    def image_transform(self):
-        # Image Preprocessing
-        # WARNING: difference from other settings: crop to 28*28
-        transform = transforms.Compose([
-            transforms.Scale(40),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomCrop(28),
-            transforms.ToTensor()])
-        return transform

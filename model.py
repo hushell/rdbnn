@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.autograd as autograd
 from torch.nn import Parameter
@@ -30,8 +31,8 @@ class rdbnn(nn.Module):
             self.m_rho[l] = {}
             self.inter_theta[l] = {}
             for k, w in layer.items():
-                self.m_mu[l][k] = Parameter(torch.zeros_like(w, device=device)).requires_grad_()
-                self.m_rho[l][k] = Parameter(torch.log(torch.ones_like(w, device=device).exp()-1)).requires_grad_()
+                self.m_mu[l][k] = Parameter(torch.zeros_like(w, device=self.device)).requires_grad_()
+                self.m_rho[l][k] = Parameter(torch.log(torch.ones_like(w, device=self.device).exp()-1)).requires_grad_()
                 self.register_parameter(l+'_'+k+'_mu', self.m_mu[l][k])
                 self.register_parameter(l+'_'+k+'_rho', self.m_rho[l][k])
 
@@ -39,6 +40,11 @@ class rdbnn(nn.Module):
         self.theta_optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr)
         self.grad_optimizer = torch.optim.Adam(self.net.dni_parameters(), lr=self.lr)
         self.m_optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        
+        #self.theta_optimizer = torch.optim.SGD(self.net.parameters(), lr=self.lr)
+        #self.grad_optimizer = torch.optim.SGD(self.net.dni_parameters(), lr=self.lr)
+        #self.m_optimizer = torch.optim.SGD(self.parameters(), lr=self.lr)
+
 
     def refine_theta(self, key, input, y_onehot=None, training=True, beta=1.0):
         '''
@@ -52,14 +58,14 @@ class rdbnn(nn.Module):
 
         for t in range(self.n_inner):
             # fc_i(theta)
-            out, grad, _ = self.net.layer(key, theta, input,
+            out, grad, fc = self.net.layer(key, theta, input,
                                           y_onehot=y_onehot, do_grad=True, training=training)
 
             # -log m_psi(theta)
             loss_m = beta * self.neg_log_m(theta, key)
 
             # compute grads
-            grad_theta = autograd.grad(outputs=[out, loss_m], inputs=theta.values(),
+            grad_theta = autograd.grad(outputs=[fc, loss_m], inputs=theta.values(),
                                         grad_outputs=[grad, torch.ones_like(loss_m)],
                                         create_graph=True, retain_graph=True)
             # GD
@@ -75,8 +81,8 @@ class rdbnn(nn.Module):
         '''
         forward with refined theta
         '''
-        input = self.net.preprocess(x)
-
+        #input = self.net.preprocess(x)
+        input = x
         # obtain refined theta and store in self.inter_theta
         for key in self.net.params.keys():
             input = self.refine_theta(key, input, y_onehot, training, beta)

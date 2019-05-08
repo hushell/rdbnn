@@ -44,15 +44,15 @@ class dni_Conv2d(nn.Module):
         self.label_emb = nn.Linear(num_classes, np.prod(np.array(input_size)))
 
         self.layer1 = nn.Sequential(
-                      nn.Conv2d(dni_input_dims, dni_hidden_size, kernel_size=5, padding=2),
+                      nn.Conv2d(dni_input_dims, dni_hidden_size, kernel_size=3, padding=1),
                       nn.BatchNorm2d(dni_hidden_size),
                       nn.ReLU())
         self.layer2 = nn.Sequential(
-                      nn.Conv2d(dni_hidden_size, dni_hidden_size, kernel_size=5, padding=2),
+                      nn.Conv2d(dni_hidden_size, dni_hidden_size, kernel_size=3, padding=1),
                       nn.BatchNorm2d(dni_hidden_size),
                       nn.ReLU())
         self.layer3 = nn.Sequential(
-                      nn.Conv2d(dni_hidden_size, input_dims, kernel_size=5, padding=2))
+                      nn.Conv2d(dni_hidden_size, input_dims, kernel_size=3, padding=1))
 
     def forward(self, x, y=None):
         if self.conditioned:
