@@ -52,14 +52,14 @@ class rdbnn(nn.Module):
 
         for t in range(self.n_inner):
             # fc_i(theta)
-            out, grad, _ = self.net.layer(key, theta, input,
+            out, grad, fc = self.net.layer(key, theta, input,
                                           y_onehot=y_onehot, do_grad=True, training=training)
 
             # -log m_psi(theta)
             loss_m = beta * self.neg_log_m(theta, key)
 
             # compute grads
-            grad_theta = autograd.grad(outputs=[out, loss_m], inputs=theta.values(),
+            grad_theta = autograd.grad(outputs=[fc, loss_m], inputs=theta.values(),
                                         grad_outputs=[grad, torch.ones_like(loss_m)],
                                         create_graph=True, retain_graph=True)
             # GD
@@ -98,6 +98,8 @@ class rdbnn(nn.Module):
         return -0.5 * (logpdf_w.mean() + logpdf_b.mean())
 
     def train_step(self, x, y, beta=1.0):
+        self.net.dni_seq.train() # enable updating BN
+
         x, y = x.to(self.device), y.to(self.device)
 
         # y_onehot for dni
@@ -110,6 +112,7 @@ class rdbnn(nn.Module):
         # update theta (or init_net) and m_psi
         self.theta_optimizer.zero_grad()
         self.m_optimizer.zero_grad()
+        self.grad_optimizer.zero_grad()
 
         logits = self.forward(x, y, y_onehot, training=True, beta=beta)
 
@@ -120,19 +123,25 @@ class rdbnn(nn.Module):
 
         self.theta_optimizer.step()
         self.m_optimizer.step()
-
-        # update dni
-        self.theta_optimizer.zero_grad() # clean theta.grad
-        self.grad_optimizer.zero_grad()
-
-        theta_loss, grad_loss = self.update_dni_module(x, y, y_onehot)
-
-        grad_loss.backward()
         self.grad_optimizer.step()
+
+        ## update dni
+        #self.theta_optimizer.zero_grad() # clean theta.grad
+        #self.grad_optimizer.zero_grad()
+
+        #theta_loss, grad_loss = self.update_dni_module(x, y, y_onehot)
+
+        #grad_loss.backward()
+        #self.grad_optimizer.step()
+
+        theta_loss = torch.zeros(1)
+        grad_loss = torch.zeros(1)
 
         return loss.item(), theta_loss.item(), grad_loss.item()
 
     def test(self, test_loader, epoch, beta=1.0):
+        self.net.dni_seq.eval()
+
         correct = [0, 0]
         total = 0
 
