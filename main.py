@@ -2,13 +2,14 @@ import os
 import argparse
 import torch
 import torch.nn.functional as F
-from model import rdbnn
+from model import rdbnn, mlp_baseline
 from functional_networks import MLP_DNI_FCx3, CNN_DNI_CONVx2_FCx1
 from dataset import *
 
 # args
 parser = argparse.ArgumentParser(description='DNI')
 parser.add_argument('--dataset', choices=['mnist', 'cifar10'], default='mnist')
+parser.add_argument('--model', choices=['rdbnn', 'mlp_baseline'], default='rdbnn')
 parser.add_argument('--num_epochs', type=int, default=300)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--conditioned', action="store_true")
@@ -41,12 +42,13 @@ train_loader = data.train_loader
 test_loader = data.test_loader
 
 # model
+model_class = rdbnn if args.model == 'rdbnn' else mlp_baseline
 net_arch = MLP_DNI_FCx3 if args.dataset == 'mnist' else CNN_DNI_CONVx2_FCx1
 net_args = dict(input_dim=data.in_channel, input_size=data.input_dims, device=device,
                 do_bn=args.do_bn, n_hidden=args.n_hidden, n_classes=data.num_classes,
                 conditioned_DNI=args.conditioned)
-model = rdbnn(net_arch, net_args, F.nll_loss,
-              lr=args.lr, n_inner=args.n_inner)
+model = model_class(net_arch, net_args, F.nll_loss,
+                    lr=args.lr, n_inner=args.n_inner)
 
 # main loop
 best_perf = 0.
@@ -59,7 +61,7 @@ for epoch in range(args.num_epochs):
                     % (epoch+1, args.num_epochs, i+1, data.num_train//args.batch_size,
                        loss, theta_loss, grad_loss))
 
-    if (epoch+1) % 10 == 0:
+    if (epoch+1) % 5 == 0:
         perf = model.test(test_loader, epoch+1, beta=args.beta)
     #    if perf[0] > best_perf:
     #        torch.save(model.net.state_dict(), model_name+'_model_best.pkl')

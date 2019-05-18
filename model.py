@@ -207,3 +207,102 @@ class rdbnn(nn.Module):
         self.net.dni_seq.eval()
         return loss, grad_loss
 
+
+class mlp_baseline(nn.Module):
+    def __init__(self, net_arch, net_args, task_loss, lr=3e-5, n_inner=None):
+        super(mlp_baseline, self).__init__()
+
+        # params
+        self.task_loss = task_loss
+        self.lr = lr
+        self.n_classes = net_args['n_classes']
+        self.device = net_args['device']
+
+        # functional network
+        self.net = net_arch(**net_args)
+
+        # m_psi (Gaussian) and intermediate theta
+        # TODO: m to be MLP or ConvNet
+        self.m_mu, self.m_rho = {}, {}
+        for l, layer in self.net.params.items():
+            self.m_mu[l] = {}
+            self.m_rho[l] = {}
+            for k, w in layer.items():
+                self.m_mu[l][k] = Parameter(torch.zeros_like(w, device=self.device)).requires_grad_()
+                self.m_rho[l][k] = Parameter(torch.log(torch.ones_like(w, device=self.device).exp()-1)).requires_grad_()
+                self.register_parameter(l+'_'+k+'_mu', self.m_mu[l][k])
+                self.register_parameter(l+'_'+k+'_rho', self.m_rho[l][k])
+
+        # optimizers
+        self.theta_optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr)
+        self.m_optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+
+
+    def test(self, test_loader, epoch, beta=1.0):
+        correct = 0
+        total = 0
+
+        for x, y in test_loader:
+            x, y = x.to(self.device), y.to(self.device)
+            total += y.size(0)
+
+            # with refined theta
+            with torch.no_grad():
+                logits = self.net.forward(self.net.params, x, training=False)
+                _, predicted = torch.max(logits, 1)
+                correct += (predicted == y).sum().item()
+
+        perf = 100 * correct / total
+        print('==> Test at Epoch %d: [normal: %.4f]' % (epoch, perf))
+        return perf
+
+
+    def forward(self, x, y, y_onehot=None, training=True, beta=1.0):
+        '''
+        forward with refined theta
+        '''
+        input = self.net.preprocess(x)
+
+        logits = self.net.forward(self.net.params, x, y_onehot,
+                                  do_grad=False, training=True)
+        return logits
+
+    def neg_log_m(self, theta, key):
+        c = -float(0.5 * math.log(2 * math.pi))
+        std_w = (1 + self.m_rho[key]['weight'].exp()).log() # TODO: make std larger avoid underflow?
+        logvar_w = std_w.pow(2).log()
+        logpdf_w = c - 0.5 * logvar_w - \
+            (theta['weight'] - self.m_mu[key]['weight']).pow(2) / (2 * std_w.pow(2))
+        std_b = (1 + self.m_rho[key]['bias'].exp()).log()
+        logvar_b = std_b.pow(2).log()
+        logpdf_b = c - 0.5 * logvar_b - \
+            (theta['bias'] - self.m_mu[key]['bias']).pow(2) / (2 * std_b.pow(2))
+        return -0.5 * (logpdf_w.mean() + logpdf_b.mean())
+
+    def train_step(self, x, y, beta=1.0):
+        self.net.dni_seq.train() # enable updating BN
+
+        x, y = x.to(self.device), y.to(self.device)
+
+        # y_onehot for dni
+        y_onehot = None
+
+        # update theta (or init_net) and m_psi
+        self.theta_optimizer.zero_grad()
+        self.m_optimizer.zero_grad()
+
+        logits = self.forward(x, y, y_onehot, training=True, beta=beta)
+
+        nll = self.task_loss(logits, y)
+        kl = sum([self.neg_log_m(theta, key) for key, theta in self.net.params.items()])
+        loss = nll + beta * kl
+        loss.backward()
+
+        self.theta_optimizer.step()
+        self.m_optimizer.step()
+
+        theta_loss = torch.zeros(1)
+        grad_loss = torch.zeros(1)
+
+        return loss.item(), theta_loss.item(), grad_loss.item()
+
