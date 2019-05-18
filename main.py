@@ -12,16 +12,15 @@ from dataset import *
 parser = argparse.ArgumentParser(description='DNI')
 parser.add_argument('--dataset', choices=['mnist', 'cifar10'], default='mnist')
 parser.add_argument('--model', choices=['rdbnn', 'mlp_baseline'], default='rdbnn')
-parser.add_argument('--num_epochs', type=int, default=300)
+parser.add_argument('--gpu_id', type=int, default=3)
+parser.add_argument('--do_bn', action="store_true")
+parser.add_argument('--num_epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--conditioned', action="store_true")
-parser.add_argument('--do_bn', action="store_true")
 parser.add_argument('--n_hidden', type=int, default=256)
 parser.add_argument('--n_inner', type=int, default=1)
-parser.add_argument('--plot', type=bool, default=False)
-parser.add_argument('--gpu_id', type=int, default=3)
 parser.add_argument('--beta', type=float, default=1e-2)
-parser.add_argument('--lr', type=float, default=3e-5)
+parser.add_argument('--lr', type=float, default=1e-4)
 parser.add_argument('--save_path', type=str, default='./experiments')
 args = parser.parse_args()
 
@@ -31,12 +30,13 @@ os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu_id)
 device = torch.device('cuda')
 
 # save
-os.makedirs(args.save_path, exist_ok=True)
-
 model_name = '%s_model%s_Bsize%d_qsteps%d_beta%.4f_lr%f' % (
         args.dataset, args.model, args.batch_size, args.n_inner, args.beta, args.lr)
 model_name = os.path.join(args.save_path, model_name)
 args.model_name = model_name
+
+save_path = os.path.join(args.save_path, model_name)
+os.makedirs(args.save_path, exist_ok=True)
 
 # log
 logname = os.path.join(args.save_path, 'log.txt')
