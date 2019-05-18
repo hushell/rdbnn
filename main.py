@@ -11,7 +11,7 @@ from dataset import *
 # args
 parser = argparse.ArgumentParser(description='DNI')
 parser.add_argument('--dataset', choices=['mnist', 'cifar10', 'lena'], default='lena')
-parser.add_argument('--model', choices=['rdbnn', 'mlp_baseline'], default='rdbnn')
+parser.add_argument('--model', choices=['rdbnn', 'baseline'], default='rdbnn')
 parser.add_argument('--gpu_id', type=int, default=3)
 parser.add_argument('--do_bn', action="store_true")
 parser.add_argument('--num_epochs', type=int, default=100)
@@ -32,14 +32,12 @@ device = torch.device('cuda')
 # save
 model_name = '%s_model%s_Bsize%d_qsteps%d_beta%.4f_lr%f' % (
         args.dataset, args.model, args.batch_size, args.n_inner, args.beta, args.lr)
-model_name = os.path.join(args.save_path, model_name)
 args.model_name = model_name
-
 save_path = os.path.join(args.save_path, model_name)
-os.makedirs(args.save_path, exist_ok=True)
+os.makedirs(save_path, exist_ok=True)
 
 # log
-logname = os.path.join(args.save_path, 'log.txt')
+logname = os.path.join(save_path, 'log.txt')
 
 def update_log(z):
     with open(logname, 'a') as f:
@@ -83,8 +81,12 @@ for epoch in range(args.num_epochs):
 
     if (epoch) % 5 == 0:
         perf, loss = model.test(test_loader, epoch, beta=args.beta)
-        loss_dict = dict(epoch=epoch, loss=loss, perf=perf, best_perf=max(perf, best_perf))
+        perf_candid = perf[0] if isinstance(perf, list) else perf
+
+        if perf_candid > best_perf:
+            #torch.save(model.state_dict(), os.path.join(save_path, 'model_best.pt'))
+            best_perf = perf_candid
+
+        loss_dict = {'epoch': epoch, 'loss': loss, 'perf': perf, 'best_perf': best_perf}
         update_log(loss_dict)
-        if perf > best_perf:
-            torch.save(model.state_dict(), model_name+'_model_best.pt')
 
