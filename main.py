@@ -10,7 +10,7 @@ from dataset import *
 ##################################################################################
 # args
 parser = argparse.ArgumentParser(description='DNI')
-parser.add_argument('--dataset', choices=['mnist', 'cifar10'], default='mnist')
+parser.add_argument('--dataset', choices=['mnist', 'cifar10', 'lena'], default='lena')
 parser.add_argument('--model', choices=['rdbnn', 'mlp_baseline'], default='rdbnn')
 parser.add_argument('--gpu_id', type=int, default=3)
 parser.add_argument('--do_bn', action="store_true")
