@@ -71,6 +71,8 @@ model = model_class(net_arch, net_args, F.nll_loss,
 best_perf = 0
 
 for epoch in range(args.num_epochs):
+    model.adjust_learning_rates(epoch)
+
     for i, (images, labels) in enumerate(train_loader):
         loss, theta_loss, grad_loss = model.train_step(images, labels, beta=args.beta)
 

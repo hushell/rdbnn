@@ -7,6 +7,7 @@ import itertools
 import math
 import numpy as np
 
+LUT_lr = [(15, 1e-3),(100, 1e-4),(200, 1e-5),(300, 5e-6)]
 
 class rdbnn(nn.Module):
     def __init__(self, net_arch, net_args, task_loss,
@@ -224,6 +225,20 @@ class rdbnn(nn.Module):
         self.load_state_dict(state_dict['m'])
         self.net.load_state_dict(state_dict['net'])
 
+    def adjust_learning_rates(self, epoch):
+        self.lr = next((lr for (max_epoch, lr) in LUT if max_epoch>epoch), LUT[-1][1])
+        print('===> new lr at epoch %d = %f' % (self.lr, epoch))
+
+        for param_group in self.theta_optimizer.param_groups:
+            param_group['lr'] = self.lr
+
+        for param_group in self.m_optimizer.param_groups:
+            param_group['lr'] = self.lr
+
+        for param_group in self.grad_optimizer.param_groups:
+            param_group['lr'] = self.lr
+
+
 class mlp_baseline(nn.Module):
     def __init__(self, net_arch, net_args, task_loss, lr=3e-5, n_inner=None):
         super(mlp_baseline, self).__init__()
@@ -324,4 +339,14 @@ class mlp_baseline(nn.Module):
         grad_loss = torch.zeros(1)
 
         return loss.item(), theta_loss.item(), grad_loss.item()
+
+    def adjust_learning_rates(self, epoch):
+        self.lr = next((lr for (max_epoch, lr) in LUT if max_epoch>epoch), LUT[-1][1])
+        print('===> new lr at epoch %d = %f' % (self.lr, epoch))
+
+        for param_group in self.theta_optimizer.param_groups:
+            param_group['lr'] = self.lr
+
+        for param_group in self.m_optimizer.param_groups:
+            param_group['lr'] = self.lr
 
