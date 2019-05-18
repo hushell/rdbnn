@@ -71,8 +71,6 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from skimage import color
 
-kwargs = {'num_workers': 1, 'pin_memory': True}
-
 class lena_mnist():
     def __init__(self, batch_size, step=100, change_colors=False):
         self.lena = PILImage.open('resources/lena.png')
@@ -86,16 +84,18 @@ class lena_mnist():
                                transforms.Normalize((0.1307,), (0.3081,)),
                                lambda x: self.blend_with_lena(x, change_colors)
                            ]))
-        test_dataset = dsets.MNIST('data', train=False,
+
+        test_dataset = dsets.MNIST('data', train=False, download=True,
                             transform=transforms.Compose([
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.1307,), (0.3081,)),
                                 lambda x: self.blend_with_lena(x, change_colors)
-                            ])),
+                            ]))
 
         # Data Loader
         # TODO: every class 10 samples
         train_sampler = torch.utils.data.sampler.SubsetRandomSampler(range(0, len(train_dataset), step))
+        kwargs = {'num_workers': 4, 'pin_memory': True, 'drop_last': True}
 
         self.train_loader = torch.utils.data.DataLoader(train_dataset,
                                                         sampler=train_sampler,
@@ -126,7 +126,7 @@ class lena_mnist():
             self.c = np.random.randint(0, 3)
             self.count = 0
         self.count += 1
-        print(self.count)
+
         image = self.lena.crop((self.w, self.h, self.w + W, self.h + H))
         image = np.asarray(image)
         image = image[..., self.c] / 255.0
