@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 import torch.autograd as autograd
 from torch.nn import Parameter
@@ -8,7 +9,7 @@ import math
 
 class rdbnn(nn.Module):
     def __init__(self, net_arch, net_args, task_loss,
-                 do_bn=False, lr=3e-5, n_inner=2):
+                 lr=3e-5, n_inner=2):
         super(rdbnn, self).__init__()
 
         # params
@@ -30,8 +31,8 @@ class rdbnn(nn.Module):
             self.m_rho[l] = {}
             self.inter_theta[l] = {}
             for k, w in layer.items():
-                self.m_mu[l][k] = Parameter(torch.zeros_like(w, device=device)).requires_grad_()
-                self.m_rho[l][k] = Parameter(torch.log(torch.ones_like(w, device=device).exp()-1)).requires_grad_()
+                self.m_mu[l][k] = Parameter(torch.zeros_like(w, device=self.device)).requires_grad_()
+                self.m_rho[l][k] = Parameter(torch.log(torch.ones_like(w, device=self.device).exp()-1)).requires_grad_()
                 self.register_parameter(l+'_'+k+'_mu', self.m_mu[l][k])
                 self.register_parameter(l+'_'+k+'_rho', self.m_rho[l][k])
 
@@ -53,15 +54,15 @@ class rdbnn(nn.Module):
         for t in range(self.n_inner):
             # fc_i(theta)
             out, grad, fc = self.net.layer(key, theta, input,
-                                          y_onehot=y_onehot, do_grad=True, training=training)
+                                           y_onehot=y_onehot, do_grad=True, training=training)
 
             # -log m_psi(theta)
             loss_m = beta * self.neg_log_m(theta, key)
 
             # compute grads
             grad_theta = autograd.grad(outputs=[fc, loss_m], inputs=theta.values(),
-                                        grad_outputs=[grad, torch.ones_like(loss_m)],
-                                        create_graph=True, retain_graph=True)
+                                       grad_outputs=[grad, torch.ones_like(loss_m)],
+                                       create_graph=True, retain_graph=True)
             # GD
             for i, (k, w) in enumerate(theta.items()):
                 theta[k] = w - self.lr * grad_theta[i] # TODO: try diff lr or lr param

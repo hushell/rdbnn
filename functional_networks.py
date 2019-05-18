@@ -107,7 +107,9 @@ class MLP_DNI_FCx3(FUNCTIONAL_NET):
 
     def forward(self, params, x, y_onehot=None, do_grad=False, training=True):
         '''
-        forward without theta refinement
+        Forward without theta refinement
+        params: inter_theta
+        do_grad: only for update_dni_module
         '''
         grads, fcs = {}, {}
 
@@ -138,9 +140,9 @@ class CNN_DNI_CONVx2_FCx1(FUNCTIONAL_NET):
 
         def gen_params():
             params = {
-                'conv1': conv_params(input_dim, n_hidden, k=5, device),
-                'conv2': conv_params(n_hidden, n_hidden*2, k=5, device),
-                'fc1': linear_params(7*7*n_hidden*2, n_classes, device)}
+                'conv1': conv_params(input_dim, n_hidden, k=5, device=device),
+                'conv2': conv_params(n_hidden, n_hidden*2, k=5, device=device),
+                'fc1': linear_params(7*7*n_hidden*2, n_classes, device=device)}
             functions = {'conv1': F.conv2d, 'conv2': F.conv2d, 'fc1': F.linear}
             args = {'conv1': {'padding':2}, 'conv2': {'padding':2}, 'fc1': {}}
             activations = {'conv1': F.relu, 'conv2': F.relu, 'fc1': None}

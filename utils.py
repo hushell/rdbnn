@@ -8,7 +8,7 @@ from torch.nn.parallel._functions import Broadcast
 from torch.nn.parallel import scatter, parallel_apply, gather
 from torch.utils.data.sampler import Sampler
 from functools import partial
-from nested_dict import nested_dict
+#from nested_dict import nested_dict
 from collections import OrderedDict
 from random import shuffle
 
@@ -42,14 +42,14 @@ def bnstats(n, device='cpu'):
             'running_var': torch.ones(n).to(device)}
 
 
-def flatten_params(params, device='cpu'):
-    return OrderedDict(('.'.join(k), v.to(device).requires_grad_())
-                       for k, v in nested_dict(params).iteritems_flat() if v is not None)
-
-
-def flatten_stats(stats, device='cpu'):
-    return OrderedDict(('.'.join(k), v.to(device))
-                       for k, v in nested_dict(stats).iteritems_flat())
+#def flatten_params(params, device='cpu'):
+#    return OrderedDict(('.'.join(k), v.to(device).requires_grad_())
+#                       for k, v in nested_dict(params).iteritems_flat() if v is not None)
+#
+#
+#def flatten_stats(stats, device='cpu'):
+#    return OrderedDict(('.'.join(k), v.to(device))
+#                       for k, v in nested_dict(stats).iteritems_flat())
 
 
 def batch_norm(x, params, stats, base, mode):

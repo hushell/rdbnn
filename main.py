@@ -17,7 +17,7 @@ parser.add_argument('--n_hidden', type=int, default=256)
 parser.add_argument('--n_inner', type=int, default=1)
 parser.add_argument('--plot', type=bool, default=False)
 parser.add_argument('--gpu_id', type=int, default=3)
-parser.add_argument('--beta', type=float, default=1e-4)
+parser.add_argument('--beta', type=float, default=1e-2)
 parser.add_argument('--lr', type=float, default=3e-5)
 args = parser.parse_args()
 
@@ -43,10 +43,10 @@ test_loader = data.test_loader
 # model
 net_arch = MLP_DNI_FCx3 if args.dataset == 'mnist' else CNN_DNI_CONVx2_FCx1
 net_args = dict(input_dim=data.in_channel, input_size=data.input_dims, device=device,
-                n_hidden=args.n_hidden, n_classes=data.num_classes,
+                do_bn=args.do_bn, n_hidden=args.n_hidden, n_classes=data.num_classes,
                 conditioned_DNI=args.conditioned)
-model = rdbnn(F.nll_loss, net_arch, net_args,
-              do_bn=args.do_bn, lr=args.lr, n_inner=args.n_inner)
+model = rdbnn(net_arch, net_args, F.nll_loss,
+              lr=args.lr, n_inner=args.n_inner)
 
 # main loop
 best_perf = 0.
