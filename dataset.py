@@ -85,17 +85,18 @@ class lena_mnist():
                                lambda x: self.blend_with_lena(x, change_colors)
                            ]))
 
-        test_dataset = dsets.MNIST('data', train=False, download=True,
+        test_dataset = dsets.MNIST(root='./data', train=False,
                             transform=transforms.Compose([
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.1307,), (0.3081,)),
-                                lambda x: self.blend_with_lena(x, change_colors)
-                            ]))
+                                lambda x: self.blend_with_lena(x, change_colors)])
+                           )
+
 
         # Data Loader
         # TODO: every class 10 samples
         train_sampler = torch.utils.data.sampler.SubsetRandomSampler(range(0, len(train_dataset), step))
-        kwargs = {'num_workers': 4, 'pin_memory': True, 'drop_last': True}
+        kwargs = {'num_workers': 1, 'pin_memory': True, 'drop_last': True}
 
         self.train_loader = torch.utils.data.DataLoader(train_dataset,
                                                         sampler=train_sampler,
@@ -158,6 +159,7 @@ if __name__ == "__main__":
         plt.show()
 
     dataset = lena_mnist(batch_size=64)
+    #data_iter = iter(dataset.test_loader)
     data_iter = iter(dataset.train_loader)
     print('===> len(dataset) = %d' % dataset.num_train)
 
