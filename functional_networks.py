@@ -1,3 +1,4 @@
+import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from utils import conv_params, linear_params, bnparams, bnstats, batch_norm
@@ -9,6 +10,8 @@ class FUNCTIONAL_NET:
         self.device = device
         self.conditioned_DNI = conditioned_DNI
         self.params = {}
+        self.bn_params, self.bn_stats = None, None
+        self.dni_seq = None
 
     def init_theta(self, key):
         #return {k:v.detach().requires_grad_() for k,v in self.params[key].items()}
@@ -16,6 +19,26 @@ class FUNCTIONAL_NET:
 
     def preprocess(self, x):
         return x
+
+    def state_dict(self):
+        assert(self.dni_seq is not None)
+        state_dict = {'params': self.params,
+                      'bn_params': self.bn_params,
+                      'bn_stats': self.bn_stats,
+                      'dni': self.dni_seq.state_dict()}
+        return state_dict
+
+    def load_state_dict(self, state_dict):
+        def load_params(receiver, sender):
+            assert(receiver is not None)
+            for k, lyr in receiver.items():
+                for w, w_in in zip(lyr.values(), sender[k].values()):
+                    w.copy_(w_in)
+        load_params(self.params, state_dict['params'])
+        if self.do_bn:
+            load_params(self.params, state_dict['bn_params'])
+            load_params(self.params, state_dict['bn_stats'])
+        self.dni_seq.load_state_dict(state_dict['dni'])
 
 
 class MLP_DNI_FCx3(FUNCTIONAL_NET):

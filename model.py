@@ -5,6 +5,7 @@ from torch.nn import Parameter
 import torch.nn.functional as F
 import itertools
 import math
+import numpy as np
 
 
 class rdbnn(nn.Module):
@@ -145,6 +146,8 @@ class rdbnn(nn.Module):
 
         correct = [0, 0]
         total = 0
+        loss_refine_per_batch = []
+        loss_per_batch = []
 
         for x, y in test_loader:
             x, y = x.to(self.device), y.to(self.device)
@@ -161,6 +164,8 @@ class rdbnn(nn.Module):
             _, predicted = torch.max(logits_refine, 1)
             total += y.size(0)
             correct[0] += (predicted == y).sum().item()
+            loss = self.task_loss(logits_refine, y)
+            loss_refine_per_batch.append(loss.item())
 
             # TODO: check the diff between logits and logits_refine
             # with refined theta
@@ -168,10 +173,12 @@ class rdbnn(nn.Module):
                 logits = self.net.forward(self.net.params, x, training=False)
                 _, predicted = torch.max(logits, 1)
                 correct[1] += (predicted == y).sum().item()
+                loss = self.task_loss(logits, y)
+                loss_per_batch.append(loss.item())
 
         perf = [100 * correct[0] / total, 100 * correct[1] / total]
         print('==> Test at Epoch %d: [with refinement: %.4f] - [normal: %.4f]' % (epoch, perf[0], perf[1]))
-        return perf
+        return perf, (np.mean(loss_refine_per_batch), np.mean(loss_per_batch))
 
     def update_dni_module(self, x, y, y_onehot):
         self.net.dni_seq.train()
@@ -207,6 +214,15 @@ class rdbnn(nn.Module):
         self.net.dni_seq.eval()
         return loss, grad_loss
 
+    def state_dict(self):
+        return {'m': self.state_dict(), 'net': self.net.state_dict()}
+
+    def load_params(self, state_dict):
+        '''
+        overload load_state_dict()
+        '''
+        self.load_state_dict(state_dict['m'])
+        self.net.load_state_dict(state_dict['net'])
 
 class mlp_baseline(nn.Module):
     def __init__(self, net_arch, net_args, task_loss, lr=3e-5, n_inner=None):
@@ -241,6 +257,7 @@ class mlp_baseline(nn.Module):
     def test(self, test_loader, epoch, beta=1.0):
         correct = 0
         total = 0
+        loss_per_batch = []
 
         for x, y in test_loader:
             x, y = x.to(self.device), y.to(self.device)
@@ -251,10 +268,12 @@ class mlp_baseline(nn.Module):
                 logits = self.net.forward(self.net.params, x, training=False)
                 _, predicted = torch.max(logits, 1)
                 correct += (predicted == y).sum().item()
+                loss = self.task_loss(logits, y)
+                loss_per_batch.append(loss.item())
 
         perf = 100 * correct / total
         print('==> Test at Epoch %d: [normal: %.4f]' % (epoch, perf))
-        return perf
+        return perf, np.mean(loss_per_batch)
 
 
     def forward(self, x, y, y_onehot=None, training=True, beta=1.0):
