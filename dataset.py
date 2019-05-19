@@ -82,15 +82,15 @@ class lena_mnist():
                            transform=transforms.Compose([
                                transforms.ToTensor(),
                                transforms.Normalize((0.1307,), (0.3081,)),
-                               lambda x: self.blend_with_lena(x, change_colors)
+                               #lambda x: self.blend_with_lena(x, change_colors)
                            ]))
 
         test_dataset = dsets.MNIST(root='./data', train=False,
                             transform=transforms.Compose([
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.1307,), (0.3081,)),
-                                lambda x: self.blend_with_lena(x, change_colors)])
-                           )
+                                lambda x: self.blend_with_lena(x, change_colors)
+                            ]))
 
 
         # Data Loader

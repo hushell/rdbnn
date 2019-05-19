@@ -7,7 +7,7 @@ import itertools
 import math
 import numpy as np
 
-LUT = [(15, 1e-3),(70, 1e-4),(80, 1e-5),(300, 5e-6)]
+LUT = [(15, 1e-3),(40, 1e-4),(80, 1e-5),(300, 5e-6)]
 
 class rdbnn(nn.Module):
     def __init__(self, net_arch, net_args, task_loss,

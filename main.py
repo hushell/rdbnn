@@ -17,7 +17,7 @@ parser.add_argument('--do_bn', action="store_true")
 parser.add_argument('--num_epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--conditioned', action="store_true")
-parser.add_argument('--n_hidden', type=int, default=256)
+parser.add_argument('--n_hidden', type=int, default=64)
 parser.add_argument('--n_inner', type=int, default=1)
 parser.add_argument('--beta', type=float, default=1e-2)
 parser.add_argument('--lr', type=float, default=1e-4)
@@ -51,7 +51,7 @@ if args.dataset == 'mnist':
 elif args.dataset == 'cifar10':
     data = cifar10(args)
 elif args.dataset == 'lena':
-    data = lena_mnist(args.batch_size, step=1, change_colors=True)
+    data = lena_mnist(args.batch_size, step=100, change_colors=True)
 
 train_loader = data.train_loader
 test_loader = data.test_loader
