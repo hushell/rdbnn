@@ -51,7 +51,7 @@ if args.dataset == 'mnist':
 elif args.dataset == 'cifar10':
     data = cifar10(args)
 elif args.dataset == 'lena':
-    data = lena_mnist(args.batch_size)
+    data = lena_mnist(args.batch_size, step=1, change_colors=True)
 
 train_loader = data.train_loader
 test_loader = data.test_loader
