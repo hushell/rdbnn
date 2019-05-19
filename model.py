@@ -7,7 +7,7 @@ import itertools
 import math
 import numpy as np
 
-LUT_lr = [(15, 1e-3),(100, 1e-4),(200, 1e-5),(300, 5e-6)]
+LUT = [(15, 1e-3),(70, 1e-4),(80, 1e-5),(300, 5e-6)]
 
 class rdbnn(nn.Module):
     def __init__(self, net_arch, net_args, task_loss,
@@ -227,7 +227,7 @@ class rdbnn(nn.Module):
 
     def adjust_learning_rates(self, epoch):
         self.lr = next((lr for (max_epoch, lr) in LUT if max_epoch>epoch), LUT[-1][1])
-        print('===> new lr at epoch %d = %f' % (self.lr, epoch))
+        print('===> new lr = %f at epoch %d' % (self.lr, epoch))
 
         for param_group in self.theta_optimizer.param_groups:
             param_group['lr'] = self.lr
@@ -342,7 +342,7 @@ class mlp_baseline(nn.Module):
 
     def adjust_learning_rates(self, epoch):
         self.lr = next((lr for (max_epoch, lr) in LUT if max_epoch>epoch), LUT[-1][1])
-        print('===> new lr at epoch %d = %f' % (self.lr, epoch))
+        print('===> new lr = %f at epoch %d' % (self.lr, epoch))
 
         for param_group in self.theta_optimizer.param_groups:
             param_group['lr'] = self.lr
