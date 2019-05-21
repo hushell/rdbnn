@@ -149,8 +149,10 @@ class lena_mnist():
         return torch.tensor(image, dtype=torch.float).transpose(0, 2) # HWC to CHW
 
 
+from itertools import cycle
+
 class inpaint_mnist():
-    def __init__(self, batch_size, ps=5, step=100):
+    def __init__(self, batch_size, ps=5, step=100, seed=100):
         self.batch_size = batch_size
         self.ps = ps # patch size
         self.count = 0
@@ -160,16 +162,19 @@ class inpaint_mnist():
                            transform=transforms.Compose([
                                transforms.ToTensor(),
                                transforms.Normalize((0.1307,), (0.3081,)),
-                               lambda x: self.painting(x)
+                               lambda x: self.painting_train(x)
                            ]))
 
         test_dataset = dsets.MNIST(root='./data', train=False,
                             transform=transforms.Compose([
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.1307,), (0.3081,)),
-                                lambda x: self.painting(x)
+                                lambda x: self.painting_test(x)
                             ]))
 
+        torch.manual_seed(seed)
+        self.test_hw = cycle(torch.randint(28 - self.ps, (1000,2)).tolist())
+        self.train_hw = cycle(torch.randint(28 - self.ps, (1000,2)).tolist())
 
         # Data Loader
         train_sampler = torch.utils.data.sampler.SubsetRandomSampler(range(0, len(train_dataset), step))
@@ -189,12 +194,17 @@ class inpaint_mnist():
         self.in_channel = 1
         self.num_train = len(train_sampler)
 
-    def painting(self, x):
+    def painting_test(self, x):
+        return self.painting(x, self.test_hw)
+
+    def painting_train(self, x):
+        return self.painting(x, self.train_hw)
+
+    def painting(self, x, hw_iter):
         C, H, W = x.shape
 
         if self.count % self.batch_size == 0:
-            self.w = np.random.randint(0, W - self.ps)
-            self.h = np.random.randint(0, H - self.ps)
+            self.w, self.h = next(hw_iter)
             self.count = 0
         self.count += 1
 

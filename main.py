@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import argparse
 import torch
@@ -10,7 +11,7 @@ from dataset import *
 ##################################################################################
 # args
 parser = argparse.ArgumentParser(description='DNI')
-parser.add_argument('--dataset', choices=['mnist', 'cifar10', 'lena'], default='lena')
+parser.add_argument('--dataset', choices=['mnist', 'cifar10', 'lena', 'inpaint'], default='inpaint')
 parser.add_argument('--model', choices=['rdbnn', 'baseline'], default='rdbnn')
 parser.add_argument('--gpu_id', type=int, default=3)
 parser.add_argument('--do_bn', action="store_true")
@@ -40,8 +41,9 @@ os.makedirs(save_path, exist_ok=True)
 logname = os.path.join(save_path, 'log.txt')
 
 def update_log(z):
+    time_stamp = time.strftime("%d-%m-%Y-%H:%M:%S")
     with open(logname, 'a') as f:
-        f.write('json_stats: ' + json.dumps(z) + '\n')
+        f.write('%s: ' % time_stamp + json.dumps(z) + '\n')
     print(z)
 
 ##################################################################################
@@ -52,6 +54,9 @@ elif args.dataset == 'cifar10':
     data = cifar10(args)
 elif args.dataset == 'lena':
     data = lena_mnist(args.batch_size, step=100, change_colors=True)
+elif args.dataset == 'inpaint':
+    data = inpaint_mnist(args.batch_size, ps=8, step=10)
+
 
 train_loader = data.train_loader
 test_loader = data.test_loader
@@ -76,7 +81,7 @@ for epoch in range(args.num_epochs):
     for i, (images, labels) in enumerate(train_loader):
         loss, theta_loss, grad_loss = model.train_step(images, labels, beta=args.beta)
 
-        if (i+1) % 50 == 0:
+        if (i+1) % 30 == 0:
             print ('Epoch [%d/%d], Step [%d/%d], Loss: %.4f, Theta Loss: %4f, Grad Loss: %.4f'
                     % (epoch+1, args.num_epochs, i+1, data.num_train//args.batch_size,
                        loss, theta_loss, grad_loss))
@@ -89,6 +94,6 @@ for epoch in range(args.num_epochs):
             #torch.save(model.state_dict(), os.path.join(save_path, 'model_best.pt'))
             best_perf = perf_candid
 
-        loss_dict = {'epoch': epoch, 'loss': loss, 'perf': perf, 'best_perf': best_perf}
+        loss_dict = {'epoch': epoch, 'lr': model.lr, 'loss': loss, 'perf': perf, 'best_perf': best_perf}
         update_log(loss_dict)
 
