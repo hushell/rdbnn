@@ -213,7 +213,7 @@ if __name__ == "__main__":
         plt.show()
 
     #dataset = lena_mnist(batch_size=64)
-    dataset = inpaint_mnist(batch_size=64, ps=8)
+    dataset = inpaint_mnist(batch_size=64, ps=12)
     #data_iter = iter(dataset.test_loader)
     data_iter = iter(dataset.train_loader)
     print('===> len(dataset) = %d' % dataset.num_train)
