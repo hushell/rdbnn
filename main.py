@@ -55,7 +55,7 @@ elif args.dataset == 'cifar10':
 elif args.dataset == 'lena':
     data = lena_mnist(args.batch_size, step=100, change_colors=True)
 elif args.dataset == 'inpaint':
-    data = inpaint_mnist(args.batch_size, ps=8, step=10)
+    data = inpaint_mnist(args.batch_size, ps=10, step=10)
 
 
 train_loader = data.train_loader
